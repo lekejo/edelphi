@@ -81,12 +81,9 @@ services:
           - dev-auth.edelphi.org
 
   keycloak:
-    # image: quay.io/keycloak/keycloak:21.1
+    image: quay.io/keycloak/keycloak:21.1
     command:
       - start-dev
-    build:
-      context: ../edelphi-keycloak
-      dockerfile: Dockerfile
     container_name: keycloak
     hostname: dev-auth.edelphi.org
     ports:
@@ -95,6 +92,7 @@ services:
       mysql:
         condition: service_healthy
     environment:
+      KC_DB: mysql
       KC_DB_URL: jdbc:mysql://mysql:3306/keycloak?useSSL=false&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
       KC_DB_USERNAME: root
       KC_DB_PASSWORD: root
