@@ -5,6 +5,7 @@ services:
     platform: linux/amd64
     volumes:
       - db_data:/var/lib/mysql
+      - ./docker/init-keycloak-db.sql:/docker-entrypoint-initdb.d/init-keycloak-db.sql:ro
     ports:
       - 3306:3306
     command: --lower_case_table_names=1
@@ -81,12 +82,9 @@ services:
           - dev-auth.edelphi.org
 
   keycloak:
-    # image: quay.io/keycloak/keycloak:21.1
+    image: quay.io/keycloak/keycloak:21.1
     command:
       - start-dev
-    build:
-      context: ../edelphi-keycloak
-      dockerfile: Dockerfile
     container_name: keycloak
     hostname: dev-auth.edelphi.org
     ports:
@@ -95,6 +93,7 @@ services:
       mysql:
         condition: service_healthy
     environment:
+      KC_DB: mysql
       KC_DB_URL: jdbc:mysql://mysql:3306/keycloak?useSSL=false&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
       KC_DB_USERNAME: root
       KC_DB_PASSWORD: root
