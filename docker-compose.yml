@@ -5,20 +5,39 @@ services:
     platform: linux/amd64
     volumes:
       - db_data:/var/lib/mysql
-      - ./docker/init-keycloak-db.sql:/docker-entrypoint-initdb.d/init-keycloak-db.sql:ro
     ports:
       - 3306:3306
     command: --lower_case_table_names=1
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: edelphi
-      MYSQL_USER: edelphi      
+      MYSQL_USER: edelphi
       MYSQL_PASSWORD: password
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root --password=root"]
       interval: 5s
       timeout: 10s
       retries: 5
+    networks:
+      - edelphi
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:21.1
+    command:
+      - start-dev
+    container_name: keycloak
+    hostname: keycloak
+    ports:
+      - 8080:8080
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      KC_DB: mysql
+      KC_DB_URL: jdbc:mysql://mysql:3306/keycloak?useSSL=false&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
+      KC_DB_USERNAME: root
+      KC_DB_PASSWORD: root
+      KC_PROXY_HEADERS: xforwarded
     networks:
       - edelphi
 
@@ -32,9 +51,10 @@ services:
     volumes:
       - ./google-service-account.json:/opt/google-service-account.json
     depends_on:
-      - mysql
-      - nginx
-      - keycloak
+      mysql:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
     environment:
       HOST: ${HOST}
       DB_HOST: ${DB_HOST}
@@ -61,43 +81,6 @@ services:
       GOOGLE_PICKER_API_KEY: ${GOOGLE_PICKER_API_KEY}
       GOOGLE_PICKER_CLIENT_ID: ${GOOGLE_PICKER_CLIENT_ID}
       GOOGLE_PICKER_APP_ID: ${GOOGLE_PICKER_APP_ID}
-    networks:
-      - edelphi
-
-  nginx:
-    hostname: ${HOST}
-    image: nginx:alpine
-    ports:
-      - 443:443
-      - 80:80
-    volumes:
-      - ./nginx-dev/sites.conf:/etc/nginx/conf.d/sites.conf:ro
-      - ./nginx-dev/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      - keycloak
-    networks:
-      edelphi:
-        aliases:
-          - dev.edelphi.org
-          - dev-auth.edelphi.org
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:21.1
-    command:
-      - start-dev
-    container_name: keycloak
-    hostname: dev-auth.edelphi.org
-    ports:
-      - 8080:8080
-    depends_on:
-      mysql:
-        condition: service_healthy
-    environment:
-      KC_DB: mysql
-      KC_DB_URL: jdbc:mysql://mysql:3306/keycloak?useSSL=false&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
-      KC_DB_USERNAME: root
-      KC_DB_PASSWORD: root
-      KC_PROXY_HEADERS: xforwarded
     networks:
       - edelphi
 
