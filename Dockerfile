@@ -5,9 +5,9 @@ COPY . .
 RUN mvn clean package -pl edelphi -am -DskipTests
 
 # Stage 2: Deploy to WildFly
+# cache-bust-2026-04-05-v3
 FROM jboss/wildfly:16.0.0.Final
 
-# Cache bust: 2026-04-05-v2
 ADD --chown=jboss ./docker/entrypoint.sh /opt/docker/entrypoint.sh
 ADD --chown=jboss ./docker/host.cli /opt/docker/host.cli
 ADD --chown=jboss ./docker/kubernets-jgroups.cli /opt/docker/kubernets-jgroups.cli
