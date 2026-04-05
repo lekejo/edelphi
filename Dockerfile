@@ -1,7 +1,14 @@
+# Stage 1: Build the WAR using Maven
+FROM maven:3.8.6-openjdk-8 AS build
+WORKDIR /app
+COPY . .
+RUN mvn clean package -pl edelphi -am -DskipTests
+
+# Stage 2: Deploy to WildFly
 FROM jboss/wildfly:16.0.0.Final
 
-ADD --chown=jboss edelphi/target/*.war /opt/jboss/wildfly/standalone/deployments/app.war
-ADD --chown=jboss ./docker/entrypoint.sh /opt/docker/entrypoint.sh 
+# Cache bust: 2026-04-05-v2
+ADD --chown=jboss ./docker/entrypoint.sh /opt/docker/entrypoint.sh
 ADD --chown=jboss ./docker/host.cli /opt/docker/host.cli
 ADD --chown=jboss ./docker/kubernets-jgroups.cli /opt/docker/kubernets-jgroups.cli
 ADD --chown=jboss ./docker/jdbc.cli /opt/docker/jdbc.cli
@@ -14,13 +21,15 @@ ADD --chown=jboss ./docker/infinispan.cli /opt/docker/infinispan.cli
 ADD --chown=jboss ./docker/http-max-parameters.cli /opt/docker/http-max-parameters.cli
 RUN chmod a+x /opt/docker/entrypoint.sh
 
+COPY --from=build /app/edelphi/target/*.war /opt/jboss/wildfly/standalone/deployments/app.war
+
 ARG WILDFLY_VERSION=16.0.0.Final
 ARG MARIADB_MODULE_VERSION=2.3.0
 ARG MYSQL_MODULE_VERSION=8.0.15
 
-RUN curl -L -o /tmp/mariadb-module.zip -L https://static.metatavu.io/wildfly/wildfly-${WILDFLY_VERSION}-mariadb-module-${MARIADB_MODULE_VERSION}.zip
-RUN curl -L -o /tmp/mysql-module.zip -L https://static.metatavu.io/wildfly/wildfly-${WILDFLY_VERSION}-mysql-module-${MYSQL_MODULE_VERSION}.zip
-RUN curl -L -o /tmp/keycloak-module.zip -L https://github.com/keycloak/keycloak/releases/download/18.0.2/keycloak-oidc-wildfly-adapter-18.0.2.zip
+RUN curl -L -o /tmp/mariadb-module.zip https://static.metatavu.io/wildfly/wildfly-${WILDFLY_VERSION}-mariadb-module-${MARIADB_MODULE_VERSION}.zip
+RUN curl -L -o /tmp/mysql-module.zip https://static.metatavu.io/wildfly/wildfly-${WILDFLY_VERSION}-mysql-module-${MYSQL_MODULE_VERSION}.zip
+RUN curl -L -o /tmp/keycloak-module.zip https://github.com/keycloak/keycloak/releases/download/18.0.2/keycloak-oidc-wildfly-adapter-18.0.2.zip
 
 RUN unzip -o /tmp/mariadb-module.zip -d /opt/jboss/wildfly/
 RUN unzip -o /tmp/mysql-module.zip -d /opt/jboss/wildfly/
