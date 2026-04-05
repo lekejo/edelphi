@@ -4,15 +4,15 @@ embed-server --server-config=standalone-full-ha.xml
 /subsystem=messaging-activemq/server=default:write-attribute(name=cluster-password,value="${env.CLUSTER_PASSWORD}")
 
 /interface=private:undefine-attribute(name=inet-address)
-/interface=private:write-attribute(name=nic,value=eth0)
+/interface=private:write-attribute(name=any-address,value=true)
 
 /interface=management:undefine-attribute(name=inet-address)
-/interface=management:write-attribute(name=nic,value=eth0)
+/interface=management:write-attribute(name=any-address,value=true)
 
 /interface=public:undefine-attribute(name=inet-address)
-/interface=public:write-attribute(name=nic,value=eth0)
+/interface=public:write-attribute(name=any-address,value=true)
 
 /interface=unsecure:undefine-attribute(name=inet-address)
-/interface=unsecure:write-attribute(name=nic,value=eth0)
+/interface=unsecure:write-attribute(name=any-address,value=true)
 
 stop-embedded-server
